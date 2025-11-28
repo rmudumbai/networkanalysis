@@ -9,6 +9,7 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap');
     
     :root {
         --primary: #1e3a8a; /* Deep Professional Blue */
@@ -497,11 +498,25 @@ def render_home_page():
         st.session_state.active_tab = 'upload'  # Default to upload
 
     # --- Top Toolbar ---
-    # Centered logo with icons on the right
-    col_left_spacer, col_logo, col_right_spacer, col1, col2, col3, col4, col5 = st.columns([3.5, 0.5, 4, 0.5, 0.5, 0.5, 0.5, 0.5])
+    # Centered title with icons on the right
+    col_left_spacer, col_title, col_right_spacer, col1, col2, col3, col4, col5 = st.columns([2, 4, 2, 0.5, 0.5, 0.5, 0.5, 0.5])
     
-    with col_logo:
-        st.image("frontend/logo_horizontal.png", use_column_width=True)
+    with col_title:
+        st.markdown("""
+            <h1 style="
+                font-family: 'Playfair Display', 'Georgia', serif;
+                font-size: 2.5rem;
+                font-weight: 700;
+                background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                text-align: center;
+                margin: 0;
+                padding: 0.5rem 0;
+                letter-spacing: 0.02em;
+            ">Network Analyze</h1>
+        """, unsafe_allow_html=True)
     
     with col1:
         if st.button("📂", help="Upload File", use_container_width=True, type="primary" if st.session_state.active_tab == 'upload' else "secondary"):
