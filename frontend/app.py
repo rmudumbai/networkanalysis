@@ -502,7 +502,7 @@ def render_home_page():
     col_left_spacer, col_banner, col_right_spacer, col1, col2, col3, col4, col5 = st.columns([1, 6, 1, 0.5, 0.5, 0.5, 0.5, 0.5])
     
     with col_banner:
-        st.image("frontend/network_analyze_banner.jpg", use_column_width=True)
+        st.image("frontend/network_analyze_banner.jpg", use_container_width=True)
     
     with col1:
         if st.button("📂", help="Upload File", use_container_width=True, type="primary" if st.session_state.active_tab == 'upload' else "secondary"):
