@@ -1,0 +1,8 @@
+streamlit
+requests
+pandas
+google-auth-oauthlib
+google-auth
+google-api-python-client
+google-generativeai
+google-cloud-storage
