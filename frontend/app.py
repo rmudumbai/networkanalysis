@@ -415,20 +415,23 @@ def render_home_page():
         st.session_state.active_tab = 'upload'  # Default to upload
 
     # --- Top Toolbar ---
-    col1, col2, col3, col4, col5, col6 = st.columns([1, 1, 1, 1, 4, 2])
+    # Use a large spacer column to push everything to the right
+    # [Spacer, Upload, GCS, Sample, Settings, Auth]
+    # Using small ratios for buttons to keep them tight
+    col_spacer, col1, col2, col3, col4, col5 = st.columns([6, 0.7, 0.7, 0.7, 0.7, 1.5], gap="small")
     
     with col1:
-        if st.button("📂 Upload", use_container_width=True, type="primary" if st.session_state.active_tab == 'upload' else "secondary"):
+        if st.button("📂", help="Upload File", use_container_width=True, type="primary" if st.session_state.active_tab == 'upload' else "secondary"):
             st.session_state.active_tab = 'upload'
             st.rerun()
             
     with col2:
-        if st.button("☁️ GCS", use_container_width=True, type="primary" if st.session_state.active_tab == 'gcs' else "secondary"):
+        if st.button("☁️", help="Import from GCS", use_container_width=True, type="primary" if st.session_state.active_tab == 'gcs' else "secondary"):
             st.session_state.active_tab = 'gcs'
             st.rerun()
             
     with col3:
-        if st.button("📊 Sample", use_container_width=True, type="primary" if st.session_state.active_tab == 'sample' else "secondary"):
+        if st.button("📊", help="Load Sample Data", use_container_width=True, type="primary" if st.session_state.active_tab == 'sample' else "secondary"):
             st.session_state.active_tab = 'sample'
             st.session_state['use_sample'] = True # Trigger load immediately
             st.rerun()
@@ -436,19 +439,20 @@ def render_home_page():
     with col4:
         # Admin Settings
         if st.session_state.user_email and st.session_state.is_admin:
-            if st.button("⚙️ Settings", use_container_width=True):
+            if st.button("⚙️", help="Admin Settings", use_container_width=True):
                 go_to_settings()
                 st.rerun()
+        else:
+             st.write("") # Placeholder to keep alignment
     
-    with col6:
+    with col5:
         # Auth Status
         if st.session_state.user_email:
-            st.caption(f"Signed in as: {st.session_state.user_email}")
-            if st.button("Sign Out", key="logout_btn"):
+            if st.button("Sign Out", key="logout_btn", use_container_width=True):
                 logout()
                 st.rerun()
         else:
-            if st.button("Sign in with Google", key="login_btn"):
+            if st.button("Sign In", key="login_btn", type="primary", use_container_width=True):
                 st.session_state.active_tab = 'auth'
                 st.rerun()
 
