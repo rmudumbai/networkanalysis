@@ -4,223 +4,305 @@ import pandas as pd
 
 st.set_page_config(page_title="Network Log Analyzer", layout="wide", page_icon="🛡️")
 
-# Custom CSS for Clean Professional Design
+# Custom CSS for Enterprise Professional Design
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
     
     :root {
-        --primary: #0052cc; /* Professional Blue */
-        --bg-main: #f4f5f7;
+        --primary: #1e3a8a; /* Deep Professional Blue */
+        --primary-hover: #1e40af;
+        --accent: #3b82f6;
+        --success: #059669;
+        --warning: #d97706;
+        --error: #dc2626;
+        --bg-main: #f8fafc;
         --bg-card: #ffffff;
-        --text-main: #172b4d;
-        --text-sub: #5e6c84;
-        --border: #dfe1e6;
+        --bg-elevated: #fafbfc;
+        --text-primary: #0f172a;
+        --text-secondary: #475569;
+        --text-tertiary: #94a3b8;
+        --border-light: #e2e8f0;
+        --border-medium: #cbd5e1;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     }
 
     /* Global Reset */
     .stApp {
-        background-color: var(--bg-main);
-        font-family: 'Inter', sans-serif;
-        color: var(--text-main);
+        background: linear-gradient(to bottom, #f8fafc 0%, #f1f5f9 100%);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        color: var(--text-primary);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
     }
     
     /* Main Layout */
     .main .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
-        max-width: 1200px;
+        padding-top: 1rem;
+        padding-bottom: 3rem;
+        max-width: 1400px;
     }
     
-    /* Headers */
+    /* Typography Hierarchy */
     h1 {
-        font-weight: 600;
-        color: var(--text-main);
-        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        font-size: 2.25rem;
         margin-bottom: 0.5rem;
-        letter-spacing: -0.01em;
+        letter-spacing: -0.025em;
+        line-height: 1.2;
+    }
+    
+    h2 {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        letter-spacing: -0.015em;
     }
     
     h3 {
         font-weight: 600;
-        color: var(--text-main);
-        font-size: 1.1rem;
+        color: var(--text-secondary);
+        font-size: 1.125rem;
         margin-bottom: 0.75rem;
+        letter-spacing: -0.01em;
     }
     
-    /* Cards */
+    p, .stMarkdown {
+        color: var(--text-secondary);
+        line-height: 1.6;
+    }
+    
+    /* Top Bar */
+    .top-bar {
+        background: linear-gradient(135deg, var(--primary) 0%, #1e40af 100%);
+        padding: 0.75rem 2rem;
+        margin: -1rem -1rem 2rem -1rem;
+        box-shadow: var(--shadow-md);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    /* Metric Cards - Enhanced */
     .metric-card {
         background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: 4px; /* Sharper corners for pro look */
-        padding: 1.25rem;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    }
-    
-    .metric-value {
-        font-size: 2rem;
-        font-weight: 600;
-        color: var(--text-main);
-    }
-    
-    .metric-label {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: var(--text-sub);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-    
-    /* Log Viewer - Clean Terminal */
-    .log-container {
-        background-color: #091e42; /* Dark Navy */
-        border-radius: 4px;
-        border: 1px solid #091e42;
-        margin-top: 1.5rem;
-        font-family: 'Roboto Mono', monospace;
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.2s ease;
+        position: relative;
         overflow: hidden;
     }
     
-    .log-header {
-        background-color: #172b4d;
-        padding: 8px 16px;
-        border-bottom: 1px solid #253858;
-        color: #b3bac5;
-        font-size: 0.75rem;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
+    .metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--accent), var(--primary));
+        opacity: 0;
+        transition: opacity 0.2s ease;
     }
     
-    .log-content {
-        max-height: 600px;
-        overflow-y: auto;
-        padding: 0.5rem 0;
+    .metric-card:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+        border-color: var(--border-medium);
     }
     
-    .log-line {
-        padding: 4px 16px;
+    .metric-card:hover::before {
+        opacity: 1;
+    }
+    
+    .metric-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        line-height: 1;
+        margin-bottom: 0.5rem;
+        font-variant-numeric: tabular-nums;
+    }
+    
+    .metric-label {
         font-size: 0.8rem;
-        line-height: 1.5;
-        color: #ebecf0;
-        border-left: 3px solid transparent;
+        font-weight: 600;
+        color: var(--text-tertiary);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
     }
     
-    .log-line:hover {
-        background-color: rgba(255,255,255,0.05);
+    /* Log Viewer - Professional Terminal */
+    .log-container {
+        background-color: #0f172a;
+        border-radius: 8px;
+        border: 1px solid #1e293b;
+        margin-top: 2rem;
+        font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
+        overflow: hidden;
+        box-shadow: var(--shadow-lg);
     }
     
-    .log-error {
-        background-color: rgba(222, 53, 11, 0.15);
-        border-left-color: #de350b;
-        color: #ffbdad;
-    }
-    
-    .log-warning {
-        background-color: rgba(255, 153, 31, 0.15);
-        border-left-color: #ff991f;
-        color: #fffae6;
-    }
-    
-    /* Toolbar */
-    .toolbar-container {
-        background-color: var(--bg-card);
-        border-bottom: 1px solid var(--border);
-        padding: 1rem 2rem;
+    .log-header {
+        background: linear-gradient(to bottom, #1e293b, #0f172a);
+        padding: 0.75rem 1.25rem;
+        border-bottom: 1px solid #334155;
+        color: #94a3b8;
+        font-size: 0.8rem;
+        font-weight: 600;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 2rem;
     }
     
-    .toolbar-btn {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background: none;
-        border: none;
-        cursor: pointer;
-        color: var(--text-sub);
-        padding: 0.5rem;
+    .log-content {
+        max-height: 650px;
+        overflow-y: auto;
+        padding: 0.75rem 0;
+        background-color: #0f172a;
+    }
+    
+    .log-content::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .log-content::-webkit-scrollbar-track {
+        background: #1e293b;
+    }
+    
+    .log-content::-webkit-scrollbar-thumb {
+        background: #475569;
         border-radius: 4px;
-        transition: all 0.2s;
     }
     
-    .toolbar-btn:hover {
-        background-color: #ebecf0;
-        color: var(--primary);
+    .log-content::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
     }
     
-    .toolbar-icon {
-        font-size: 1.5rem;
-        margin-bottom: 0.25rem;
+    .log-line {
+        padding: 0.375rem 1.25rem;
+        font-size: 0.85rem;
+        line-height: 1.6;
+        color: #e2e8f0;
+        border-left: 3px solid transparent;
+        transition: background-color 0.1s ease;
+        font-variant-ligatures: none;
     }
     
-    .toolbar-label {
-        font-size: 0.75rem;
-        font-weight: 500;
+    .log-line:hover {
+        background-color: rgba(51, 65, 85, 0.3);
     }
     
-    /* Action Area */
-    .action-area {
-        background-color: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        padding: 1.5rem;
-        margin-bottom: 2rem;
-        animation: slideDown 0.3s ease-out;
+    .log-error {
+        background-color: rgba(220, 38, 38, 0.1);
+        border-left-color: var(--error);
+        color: #fca5a5;
     }
     
-    @keyframes slideDown {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
+    .log-warning {
+        background-color: rgba(217, 119, 6, 0.1);
+        border-left-color: var(--warning);
+        color: #fcd34d;
     }
-
-    /* Buttons */
+    
+    /* Buttons - Enhanced */
     .stButton > button {
-        background-color: var(--primary);
+        background: linear-gradient(135deg, var(--primary), var(--primary-hover));
         color: white;
-        font-weight: 500;
-        padding: 0.5rem 1rem;
-        border-radius: 3px;
+        font-weight: 600;
+        padding: 0.625rem 1.25rem;
+        border-radius: 6px;
         border: none;
-        transition: background 0.1s;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.2s ease;
         width: 100%;
+        font-size: 0.875rem;
+        letter-spacing: 0.01em;
     }
     
     .stButton > button:hover {
-        background-color: #0047b3;
-        box-shadow: none;
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+        background: linear-gradient(135deg, var(--primary-hover), var(--primary));
     }
     
-    /* Inputs */
+    .stButton > button:active {
+        transform: translateY(0);
+    }
+    
+    /* Secondary Buttons */
+    .stButton > button[kind="secondary"] {
+        background: var(--bg-elevated);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-medium);
+    }
+    
+    .stButton > button[kind="secondary"]:hover {
+        background: white;
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+    
+    /* Inputs - Refined */
     .stTextInput > div > div > input,
     .stSelectbox > div > div > div {
-        background-color: #fafbfc;
-        border: 2px solid #dfe1e6;
-        border-radius: 3px;
-        color: var(--text-main);
+        background-color: var(--bg-card);
+        border: 1.5px solid var(--border-light);
+        border-radius: 6px;
+        color: var(--text-primary);
+        padding: 0.625rem 0.875rem;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
     }
     
-    .stTextInput > div > div > input:focus {
+    .stTextInput > div > div > input:focus,
+    .stSelectbox > div > div > div:focus {
         border-color: var(--primary);
-        background-color: #fff;
+        box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+        background-color: white;
     }
     
     /* File Uploader */
     [data-testid="stFileUploader"] {
-        background-color: #fafbfc;
-        border: 2px dashed #dfe1e6;
-        border-radius: 4px;
-        padding: 1.5rem;
+        background-color: var(--bg-elevated);
+        border: 2px dashed var(--border-medium);
+        border-radius: 8px;
+        padding: 2rem;
+        transition: all 0.2s ease;
+    }
+    
+    [data-testid="stFileUploader"]:hover {
+        border-color: var(--primary);
+        background-color: rgba(30, 58, 138, 0.02);
     }
     
     /* Sidebar Styling */
     [data-testid="stSidebar"] {
-        background-color: var(--bg-card);
-        border-right: 1px solid var(--border);
+        background: linear-gradient(to bottom, #ffffff, #f8fafc);
+        border-right: 1px solid var(--border-light);
+        box-shadow: var(--shadow-sm);
+    }
+    
+    /* Multiselect */
+    .stMultiSelect > div > div {
+        border-radius: 6px;
+    }
+    
+    /* Info/Warning/Error boxes */
+    .stAlert {
+        border-radius: 6px;
+        border-left-width: 4px;
+    }
+    
+    /* Expander */
+    .streamlit-expanderHeader {
+        font-weight: 600;
+        color: var(--text-secondary);
     }
     
 </style>
