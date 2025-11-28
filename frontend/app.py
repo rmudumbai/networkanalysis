@@ -4,168 +4,171 @@ import pandas as pd
 
 st.set_page_config(page_title="Network Log Analyzer", layout="wide", page_icon="🛡️")
 
-# Custom CSS for Enterprise Professional Design
+# Custom CSS for Material Design
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap');
+    @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
     
     :root {
-        --primary: #1e3a8a; /* Deep Professional Blue */
-        --primary-hover: #1e40af;
-        --accent: #3b82f6;
-        --success: #059669;
-        --warning: #d97706;
-        --error: #dc2626;
-        --bg-main: #f8fafc;
-        --bg-card: #ffffff;
-        --bg-elevated: #fafbfc;
-        --text-primary: #0f172a;
-        --text-secondary: #475569;
-        --text-tertiary: #94a3b8;
-        --border-light: #e2e8f0;
-        --border-medium: #cbd5e1;
-        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        /* Material Design Color Palette */
+        --md-primary: #1976d2;
+        --md-primary-dark: #1565c0;
+        --md-primary-light: #42a5f5;
+        --md-secondary: #424242;
+        --md-error: #d32f2f;
+        --md-warning: #f57c00;
+        --md-success: #388e3c;
+        --md-info: #0288d1;
+        
+        /* Surfaces */
+        --md-surface: #ffffff;
+        --md-background: #fafafa;
+        --md-surface-variant: #f5f5f5;
+        
+        /* Text */
+        --md-text-primary: rgba(0, 0, 0, 0.87);
+        --md-text-secondary: rgba(0, 0, 0, 0.60);
+        --md-text-disabled: rgba(0, 0, 0, 0.38);
+        
+        /* Elevation Shadows (Material Design) */
+        --md-elevation-1: 0px 2px 1px -1px rgba(0,0,0,0.2), 0px 1px 1px 0px rgba(0,0,0,0.14), 0px 1px 3px 0px rgba(0,0,0,0.12);
+        --md-elevation-2: 0px 3px 1px -2px rgba(0,0,0,0.2), 0px 2px 2px 0px rgba(0,0,0,0.14), 0px 1px 5px 0px rgba(0,0,0,0.12);
+        --md-elevation-3: 0px 3px 3px -2px rgba(0,0,0,0.2), 0px 3px 4px 0px rgba(0,0,0,0.14), 0px 1px 8px 0px rgba(0,0,0,0.12);
+        --md-elevation-4: 0px 2px 4px -1px rgba(0,0,0,0.2), 0px 4px 5px 0px rgba(0,0,0,0.14), 0px 1px 10px 0px rgba(0,0,0,0.12);
+        --md-elevation-8: 0px 5px 5px -3px rgba(0,0,0,0.2), 0px 8px 10px 1px rgba(0,0,0,0.14), 0px 3px 14px 2px rgba(0,0,0,0.12);
+        
+        /* 4px Spacing Scale */
+        --spacing-1: 4px;
+        --spacing-2: 8px;
+        --spacing-3: 12px;
+        --spacing-4: 16px;
+        --spacing-5: 20px;
+        --spacing-6: 24px;
+        --spacing-7: 28px;
+        --spacing-8: 32px;
+        --spacing-10: 40px;
+        --spacing-12: 48px;
     }
 
     /* Global Reset */
     .stApp {
-        background: linear-gradient(to bottom, #f8fafc 0%, #f1f5f9 100%);
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        color: var(--text-primary);
+        background-color: var(--md-background);
+        font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+        color: var(--md-text-primary);
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
     }
     
     /* Main Layout */
     .main .block-container {
-        padding-top: 1rem;
-        padding-bottom: 3rem;
-        max-width: 1400px;
+        padding-top: var(--spacing-4);
+        padding-bottom: var(--spacing-8);
+        max-width: 1440px;
     }
     
-    /* Typography Hierarchy */
+    /* Typography - Material Design */
     h1 {
-        font-weight: 700;
-        color: var(--text-primary);
-        font-size: 2.25rem;
-        margin-bottom: 0.5rem;
-        letter-spacing: -0.025em;
-        line-height: 1.2;
+        font-family: 'Roboto', sans-serif;
+        font-weight: 300;
+        font-size: 2.125rem;
+        line-height: 1.235;
+        letter-spacing: -0.00833em;
+        color: var(--md-text-primary);
+        margin-bottom: var(--spacing-4);
     }
     
     h2 {
-        font-weight: 600;
-        color: var(--text-primary);
+        font-family: 'Roboto', sans-serif;
+        font-weight: 400;
         font-size: 1.5rem;
-        margin-bottom: 1rem;
-        letter-spacing: -0.015em;
+        line-height: 1.334;
+        letter-spacing: 0em;
+        color: var(--md-text-primary);
+        margin-bottom: var(--spacing-4);
     }
     
     h3 {
-        font-weight: 600;
-        color: var(--text-secondary);
-        font-size: 1.125rem;
-        margin-bottom: 0.75rem;
-        letter-spacing: -0.01em;
+        font-family: 'Roboto', sans-serif;
+        font-weight: 500;
+        font-size: 1.25rem;
+        line-height: 1.6;
+        letter-spacing: 0.0075em;
+        color: var(--md-text-primary);
+        margin-bottom: var(--spacing-3);
     }
     
     p, .stMarkdown {
-        color: var(--text-secondary);
-        line-height: 1.6;
+        font-family: 'Roboto', sans-serif;
+        font-weight: 400;
+        font-size: 1rem;
+        line-height: 1.5;
+        letter-spacing: 0.00938em;
+        color: var(--md-text-secondary);
     }
     
-    /* Top Bar */
-    .top-bar {
-        background: linear-gradient(135deg, var(--primary) 0%, #1e40af 100%);
-        padding: 0.75rem 2rem;
-        margin: -1rem -1rem 2rem -1rem;
-        box-shadow: var(--shadow-md);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    
-    /* Metric Cards - Enhanced */
+    /* Material Design Cards */
     .metric-card {
-        background: var(--bg-card);
-        border: 1px solid var(--border-light);
-        border-radius: 8px;
-        padding: 1.5rem;
-        box-shadow: var(--shadow-sm);
-        transition: all 0.2s ease;
+        background: var(--md-surface);
+        border-radius: 4px;
+        padding: var(--spacing-4);
+        box-shadow: var(--md-elevation-2);
+        transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         overflow: hidden;
     }
     
-    .metric-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: linear-gradient(90deg, var(--accent), var(--primary));
-        opacity: 0;
-        transition: opacity 0.2s ease;
-    }
-    
     .metric-card:hover {
-        box-shadow: var(--shadow-md);
-        transform: translateY(-2px);
-        border-color: var(--border-medium);
-    }
-    
-    .metric-card:hover::before {
-        opacity: 1;
+        box-shadow: var(--md-elevation-4);
     }
     
     .metric-value {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: var(--text-primary);
-        line-height: 1;
-        margin-bottom: 0.5rem;
-        font-variant-numeric: tabular-nums;
+        font-family: 'Roboto', sans-serif;
+        font-size: 2.125rem;
+        font-weight: 400;
+        line-height: 1.235;
+        color: var(--md-text-primary);
+        margin-bottom: var(--spacing-2);
     }
     
     .metric-label {
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: var(--text-tertiary);
+        font-family: 'Roboto', sans-serif;
+        font-size: 0.875rem;
+        font-weight: 500;
+        line-height: 1.57;
+        letter-spacing: 0.00714em;
+        color: var(--md-text-secondary);
         text-transform: uppercase;
-        letter-spacing: 0.08em;
     }
     
-    /* Log Viewer - Professional Terminal */
+    /* Log Viewer - Material Design */
     .log-container {
-        background-color: #0f172a;
-        border-radius: 8px;
-        border: 1px solid #1e293b;
-        margin-top: 2rem;
-        font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
+        background-color: #263238;
+        border-radius: 4px;
+        margin-top: var(--spacing-6);
+        font-family: 'Roboto Mono', monospace;
         overflow: hidden;
-        box-shadow: var(--shadow-lg);
+        box-shadow: var(--md-elevation-3);
     }
     
     .log-header {
-        background: linear-gradient(to bottom, #1e293b, #0f172a);
-        padding: 0.75rem 1.25rem;
-        border-bottom: 1px solid #334155;
-        color: #94a3b8;
-        font-size: 0.8rem;
-        font-weight: 600;
+        background-color: #37474f;
+        padding: var(--spacing-3) var(--spacing-4);
+        border-bottom: 1px solid #455a64;
+        color: rgba(255, 255, 255, 0.87);
+        font-size: 0.875rem;
+        font-weight: 500;
         display: flex;
         align-items: center;
         justify-content: space-between;
     }
     
     .log-content {
-        max-height: 650px;
+        max-height: 600px;
         overflow-y: auto;
-        padding: 0.75rem 0;
-        background-color: #0f172a;
+        padding: var(--spacing-2) 0;
+        background-color: #263238;
     }
     
     .log-content::-webkit-scrollbar {
@@ -173,137 +176,156 @@ st.markdown("""
     }
     
     .log-content::-webkit-scrollbar-track {
-        background: #1e293b;
+        background: #37474f;
     }
     
     .log-content::-webkit-scrollbar-thumb {
-        background: #475569;
+        background: #546e7a;
         border-radius: 4px;
     }
     
     .log-content::-webkit-scrollbar-thumb:hover {
-        background: #64748b;
+        background: #607d8b;
     }
     
     .log-line {
-        padding: 0.375rem 1.25rem;
-        font-size: 0.85rem;
-        line-height: 1.6;
-        color: #e2e8f0;
+        padding: var(--spacing-1) var(--spacing-4);
+        font-size: 0.875rem;
+        line-height: 1.5;
+        color: rgba(255, 255, 255, 0.87);
         border-left: 3px solid transparent;
-        transition: background-color 0.1s ease;
-        font-variant-ligatures: none;
+        transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
     .log-line:hover {
-        background-color: rgba(51, 65, 85, 0.3);
+        background-color: rgba(255, 255, 255, 0.08);
     }
     
     .log-error {
-        background-color: rgba(220, 38, 38, 0.1);
-        border-left-color: var(--error);
-        color: #fca5a5;
+        background-color: rgba(211, 47, 47, 0.12);
+        border-left-color: var(--md-error);
+        color: #ef5350;
     }
     
     .log-warning {
-        background-color: rgba(217, 119, 6, 0.1);
-        border-left-color: var(--warning);
-        color: #fcd34d;
+        background-color: rgba(245, 124, 0, 0.12);
+        border-left-color: var(--md-warning);
+        color: #ffa726;
     }
     
-    /* Buttons - Enhanced */
+    /* Material Design Buttons */
     .stButton > button {
-        background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+        background-color: var(--md-primary);
         color: white;
-        font-weight: 600;
-        padding: 0.625rem 1.25rem;
-        border-radius: 6px;
-        border: none;
-        box-shadow: var(--shadow-sm);
-        transition: all 0.2s ease;
-        width: 100%;
+        font-family: 'Roboto', sans-serif;
+        font-weight: 500;
         font-size: 0.875rem;
-        letter-spacing: 0.01em;
+        line-height: 1.75;
+        letter-spacing: 0.02857em;
+        text-transform: uppercase;
+        padding: var(--spacing-2) var(--spacing-4);
+        border-radius: 4px;
+        border: none;
+        box-shadow: var(--md-elevation-2);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        width: 100%;
     }
     
     .stButton > button:hover {
-        transform: translateY(-1px);
-        box-shadow: var(--shadow-md);
-        background: linear-gradient(135deg, var(--primary-hover), var(--primary));
+        background-color: var(--md-primary-dark);
+        box-shadow: var(--md-elevation-4);
     }
     
     .stButton > button:active {
-        transform: translateY(0);
+        box-shadow: var(--md-elevation-8);
     }
     
     /* Secondary Buttons */
     .stButton > button[kind="secondary"] {
-        background: var(--bg-elevated);
-        color: var(--text-secondary);
-        border: 1px solid var(--border-medium);
+        background-color: transparent;
+        color: var(--md-primary);
+        border: 1px solid rgba(25, 118, 210, 0.5);
+        box-shadow: none;
     }
     
     .stButton > button[kind="secondary"]:hover {
-        background: white;
-        border-color: var(--primary);
-        color: var(--primary);
+        background-color: rgba(25, 118, 210, 0.04);
+        border-color: var(--md-primary);
     }
     
-    /* Inputs - Refined */
+    /* Material Design Inputs */
     .stTextInput > div > div > input,
     .stSelectbox > div > div > div {
-        background-color: var(--bg-card);
-        border: 1.5px solid var(--border-light);
-        border-radius: 6px;
-        color: var(--text-primary);
-        padding: 0.625rem 0.875rem;
-        font-size: 0.9rem;
-        transition: all 0.2s ease;
+        background-color: transparent;
+        border: none;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.42);
+        border-radius: 4px 4px 0 0;
+        background-color: rgba(0, 0, 0, 0.04);
+        color: var(--md-text-primary);
+        padding: var(--spacing-2) var(--spacing-3);
+        font-family: 'Roboto', sans-serif;
+        font-size: 1rem;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .stTextInput > div > div > input:hover {
+        background-color: rgba(0, 0, 0, 0.08);
+        border-bottom-color: rgba(0, 0, 0, 0.87);
     }
     
     .stTextInput > div > div > input:focus,
     .stSelectbox > div > div > div:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
-        background-color: white;
+        background-color: rgba(0, 0, 0, 0.09);
+        border-bottom: 2px solid var(--md-primary);
+        outline: none;
     }
     
     /* File Uploader */
     [data-testid="stFileUploader"] {
-        background-color: var(--bg-elevated);
-        border: 2px dashed var(--border-medium);
-        border-radius: 8px;
-        padding: 2rem;
-        transition: all 0.2s ease;
+        background-color: var(--md-surface-variant);
+        border: 2px dashed rgba(0, 0, 0, 0.38);
+        border-radius: 4px;
+        padding: var(--spacing-6);
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
     [data-testid="stFileUploader"]:hover {
-        border-color: var(--primary);
-        background-color: rgba(30, 58, 138, 0.02);
+        border-color: var(--md-primary);
+        background-color: rgba(25, 118, 210, 0.04);
     }
     
-    /* Sidebar Styling */
+    /* Sidebar - Material Design */
     [data-testid="stSidebar"] {
-        background: linear-gradient(to bottom, #ffffff, #f8fafc);
-        border-right: 1px solid var(--border-light);
-        box-shadow: var(--shadow-sm);
+        background: var(--md-surface);
+        border-right: 1px solid rgba(0, 0, 0, 0.12);
+        box-shadow: var(--md-elevation-1);
     }
     
     /* Multiselect */
     .stMultiSelect > div > div {
-        border-radius: 6px;
+        border-radius: 4px;
     }
     
-    /* Info/Warning/Error boxes */
+    /* Alert Boxes */
     .stAlert {
-        border-radius: 6px;
+        border-radius: 4px;
         border-left-width: 4px;
+        padding: var(--spacing-4);
     }
     
     /* Expander */
     .streamlit-expanderHeader {
-        font-weight: 600;
-        color: var(--text-secondary);
+        font-family: 'Roboto', sans-serif;
+        font-weight: 500;
+        color: var(--md-text-primary);
+        padding: var(--spacing-3) var(--spacing-4);
+    }
+    
+    /* Material Design Divider */
+    hr {
+        border: none;
+        border-top: 1px solid rgba(0, 0, 0, 0.12);
+        margin: var(--spacing-4) 0;
     }
     
 </style>
@@ -519,17 +541,18 @@ def render_home_page():
         """, unsafe_allow_html=True)
     
     with col1:
-        if st.button("📂", help="Upload File", use_container_width=True, type="primary" if st.session_state.active_tab == 'upload' else "secondary"):
+        upload_label = '<i class="fas fa-upload"></i>' if st.session_state.active_tab == 'upload' else '<i class="fas fa-upload"></i>'
+        if st.button(upload_label, help="Upload File", use_container_width=True, type="primary" if st.session_state.active_tab == 'upload' else "secondary", key="btn_upload"):
             st.session_state.active_tab = 'upload'
             st.rerun()
             
     with col2:
-        if st.button("☁️", help="Import from GCS", use_container_width=True, type="primary" if st.session_state.active_tab == 'gcs' else "secondary"):
+        if st.button('<i class="fas fa-cloud"></i>', help="Import from GCS", use_container_width=True, type="primary" if st.session_state.active_tab == 'gcs' else "secondary", key="btn_gcs"):
             st.session_state.active_tab = 'gcs'
             st.rerun()
             
     with col3:
-        if st.button("📊", help="Load Sample Data", use_container_width=True, type="primary" if st.session_state.active_tab == 'sample' else "secondary"):
+        if st.button('<i class="fas fa-database"></i>', help="Load Sample Data", use_container_width=True, type="primary" if st.session_state.active_tab == 'sample' else "secondary", key="btn_sample"):
             st.session_state.active_tab = 'sample'
             st.session_state['use_sample'] = True # Trigger load immediately
             st.rerun()
@@ -537,7 +560,7 @@ def render_home_page():
     with col4:
         # Admin Settings
         if st.session_state.user_email and st.session_state.is_admin:
-            if st.button("⚙️", help="Admin Settings", use_container_width=True):
+            if st.button('<i class="fas fa-cog"></i>', help="Admin Settings", use_container_width=True, key="btn_settings"):
                 go_to_settings()
                 st.rerun()
         else:
@@ -547,11 +570,11 @@ def render_home_page():
     with col5:
         # Auth Status - Use icon for both states
         if st.session_state.user_email:
-            if st.button("🚪", help=f"Sign Out ({st.session_state.user_email})", key="logout_btn", use_container_width=True):
+            if st.button('<i class="fas fa-sign-out-alt"></i>', help=f"Sign Out ({st.session_state.user_email})", key="logout_btn", use_container_width=True):
                 logout()
                 st.rerun()
         else:
-            if st.button("👤", help="Sign In with Google", key="login_btn", type="primary", use_container_width=True):
+            if st.button('<i class="fas fa-user"></i>', help="Sign In with Google", key="login_btn", type="primary", use_container_width=True):
                 st.session_state.active_tab = 'auth'
                 st.rerun()
 
