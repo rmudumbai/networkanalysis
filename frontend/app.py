@@ -541,18 +541,17 @@ def render_home_page():
         """, unsafe_allow_html=True)
     
     with col1:
-        upload_label = '<i class="fas fa-upload"></i>' if st.session_state.active_tab == 'upload' else '<i class="fas fa-upload"></i>'
-        if st.button(upload_label, help="Upload File", use_container_width=True, type="primary" if st.session_state.active_tab == 'upload' else "secondary", key="btn_upload"):
+        if st.button("⬆", help="Upload File", use_container_width=True, type="primary" if st.session_state.active_tab == 'upload' else "secondary", key="btn_upload"):
             st.session_state.active_tab = 'upload'
             st.rerun()
             
     with col2:
-        if st.button('<i class="fas fa-cloud"></i>', help="Import from GCS", use_container_width=True, type="primary" if st.session_state.active_tab == 'gcs' else "secondary", key="btn_gcs"):
+        if st.button("☁", help="Import from GCS", use_container_width=True, type="primary" if st.session_state.active_tab == 'gcs' else "secondary", key="btn_gcs"):
             st.session_state.active_tab = 'gcs'
             st.rerun()
             
     with col3:
-        if st.button('<i class="fas fa-database"></i>', help="Load Sample Data", use_container_width=True, type="primary" if st.session_state.active_tab == 'sample' else "secondary", key="btn_sample"):
+        if st.button("📊", help="Load Sample Data", use_container_width=True, type="primary" if st.session_state.active_tab == 'sample' else "secondary", key="btn_sample"):
             st.session_state.active_tab = 'sample'
             st.session_state['use_sample'] = True # Trigger load immediately
             st.rerun()
@@ -560,7 +559,7 @@ def render_home_page():
     with col4:
         # Admin Settings
         if st.session_state.user_email and st.session_state.is_admin:
-            if st.button('<i class="fas fa-cog"></i>', help="Admin Settings", use_container_width=True, key="btn_settings"):
+            if st.button("⚙", help="Admin Settings", use_container_width=True, key="btn_settings"):
                 go_to_settings()
                 st.rerun()
         else:
@@ -570,11 +569,11 @@ def render_home_page():
     with col5:
         # Auth Status - Use icon for both states
         if st.session_state.user_email:
-            if st.button('<i class="fas fa-sign-out-alt"></i>', help=f"Sign Out ({st.session_state.user_email})", key="logout_btn", use_container_width=True):
+            if st.button("⎋", help=f"Sign Out ({st.session_state.user_email})", key="logout_btn", use_container_width=True):
                 logout()
                 st.rerun()
         else:
-            if st.button('<i class="fas fa-user"></i>', help="Sign In with Google", key="login_btn", type="primary", use_container_width=True):
+            if st.button("👤", help="Sign In with Google", key="login_btn", type="primary", use_container_width=True):
                 st.session_state.active_tab = 'auth'
                 st.rerun()
 
