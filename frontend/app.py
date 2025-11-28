@@ -202,191 +202,342 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Sidebar
-with st.sidebar:
-    st.image("frontend/logo.png", width=150)
-    st.markdown("### Control Panel")
-    st.markdown("---")
-    
-    uploaded_file = st.file_uploader("Upload Log File", type=["log", "txt"])
-    
-    st.markdown("---")
-    st.markdown("### Quick Actions")
-    if st.button("Load Sample Data", use_container_width=True):
-        st.session_state['use_sample'] = True
-    
-    st.markdown("---")
-    st.markdown("### Import from GCS")
-    gcs_bucket = st.text_input("Bucket Name", placeholder="e.g., my-log-bucket")
-    gcs_blob = st.text_input("File Path", placeholder="e.g., logs/syslog.log")
-    if st.button("Load from GCS", use_container_width=True):
-        if gcs_bucket and gcs_blob:
-             st.session_state['use_gcs'] = True
-             st.session_state['gcs_bucket'] = gcs_bucket
-             st.session_state['gcs_blob'] = gcs_blob
-        else:
-            st.error("Please provide both Bucket Name and File Path.")
-    
-    st.markdown("---")
-    st.info("Supported formats: .log, .txt\n\nMax file size: 200MB")
+import os
+import google_auth_oauthlib.flow
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
 
-# Main Content
-st.title("Network Log Analyzer")
-st.markdown("Enterprise-grade log analysis and anomaly detection.")
-
-# Add Gemini API Key input in sidebar
-with st.sidebar:
-    st.markdown("---")
-    st.markdown("### Gemini Chatbot")
-    gemini_api_key = st.text_input("Gemini API Key", type="password", help="Enter your Gemini API key to enable the chatbot")
-
-# Initialize session state for chat
-if 'messages' not in st.session_state:
-    st.session_state.messages = []
-if 'analyzed_logs' not in st.session_state:
-    st.session_state.analyzed_logs = None
-
-# Logic to handle file source
-files = None
-json_data = None
-api_url = "http://localhost:8000/analyze"
-
-if uploaded_file is not None:
-    files = {"file": (uploaded_file.name, uploaded_file, "text/plain")}
-elif st.session_state.get('use_sample'):
-    try:
-        f = open("sample_syslog.log", "rb")
-        files = {"file": ("sample_syslog.log", f, "text/plain")}
-    except FileNotFoundError:
-        st.error("Sample file not found.")
-elif st.session_state.get('use_gcs'):
-    api_url = "http://localhost:8000/analyze-gcs"
-    json_data = {
-        "bucket_name": st.session_state['gcs_bucket'],
-        "blob_name": st.session_state['gcs_blob']
+# Initialize Session State
+if 'current_page' not in st.session_state:
+    st.session_state.current_page = 'home'
+if 'user_email' not in st.session_state:
+    st.session_state.user_email = None
+if 'is_admin' not in st.session_state:
+    st.session_state.is_admin = False
+if 'settings' not in st.session_state:
+    st.session_state.settings = {
+        'llm_provider': 'Gemini',
+        'api_key': '',
+        'gcp_project_id': ''
     }
 
-if files or json_data:
-    with st.spinner("Processing logs..."):
-        try:
-            # Reset file pointer if it's a reused file object
-            if files and 'f' in locals() and not f.closed:
-                f.seek(0)
+# Admin Configuration
+ADMIN_EMAILS = ["admin@example.com", "mohanr@google.com"] # Add your email here for testing
+
+# Navigation Functions
+def go_to_settings():
+    st.session_state.current_page = 'settings'
+
+def go_to_home():
+    st.session_state.current_page = 'home'
+
+def login_with_google():
+    # Check for client_secret.json
+    if not os.path.exists("client_secret.json"):
+        st.error("client_secret.json not found. Please upload it below.")
+        return
+
+    try:
+        # Create flow instance to manage the OAuth 2.0 Authorization Grant Flow steps.
+        flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
+            'client_secret.json',
+            scopes=['openid', 'https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile'])
+
+        # Launch the flow in the browser
+        # Note: This works for localhost. For production, you'd need a different flow.
+        creds = flow.run_local_server(port=0)
+        
+        # Get user info
+        from googleapiclient.discovery import build
+        service = build('oauth2', 'v2', credentials=creds)
+        user_info = service.userinfo().get().execute()
+        email = user_info['email']
+        
+        st.session_state.user_email = email
+        if email in ADMIN_EMAILS:
+            st.session_state.is_admin = True
+            st.success(f"Logged in as Admin: {email}")
+        else:
+            st.session_state.is_admin = False
+            st.warning(f"Logged in as User: {email} (No Admin Access)")
             
-            if files:
-                response = requests.post(api_url, files=files)
+    except Exception as e:
+        st.error(f"Login failed: {str(e)}")
+
+def logout():
+    st.session_state.user_email = None
+    st.session_state.is_admin = False
+    st.session_state.current_page = 'home'
+
+# --- Settings Page ---
+def render_settings_page():
+    st.markdown("### ⚙️ Admin Settings")
+    st.markdown("---")
+    
+    if not st.session_state.is_admin:
+        st.error("Access Denied. You must be an admin to view this page.")
+        if st.button("Back to Home"):
+            go_to_home()
+            st.rerun()
+        return
+
+    with st.form("settings_form"):
+        st.subheader("LLM Configuration")
+        llm_provider = st.selectbox(
+            "LLM Provider", 
+            ["Gemini", "Vertex AI", "OpenAI"], 
+            index=["Gemini", "Vertex AI", "OpenAI"].index(st.session_state.settings.get('llm_provider', 'Gemini'))
+        )
+        
+        api_key = st.text_input(
+            "API Key", 
+            value=st.session_state.settings.get('api_key', ''), 
+            type="password",
+            help="Enter the API Key for the selected provider"
+        )
+        
+        st.subheader("Google Cloud Configuration")
+        gcp_project = st.text_input(
+            "GCP Project ID", 
+            value=st.session_state.settings.get('gcp_project_id', ''),
+            help="Required for Vertex AI and GCS integration"
+        )
+        
+        if st.form_submit_button("Save Settings"):
+            st.session_state.settings['llm_provider'] = llm_provider
+            st.session_state.settings['api_key'] = api_key
+            st.session_state.settings['gcp_project_id'] = gcp_project
+            st.success("Settings Saved Successfully!")
+
+    if st.button("Back to Home"):
+        go_to_home()
+        st.rerun()
+
+# --- Home Page ---
+def render_home_page():
+    # Header with Admin Controls
+    col1, col2 = st.columns([6, 1])
+    with col1:
+        st.title("Network Log Analyzer")
+    with col2:
+        if st.session_state.user_email and st.session_state.is_admin:
+            if st.button("⚙️", help="Admin Settings"):
+                go_to_settings()
+                st.rerun()
+
+    # Sidebar
+    with st.sidebar:
+        st.image("frontend/logo.png", width=150)
+        st.markdown("### Control Panel")
+        st.markdown("---")
+        
+        # Auth Status
+        if st.session_state.user_email:
+            st.success(f"Signed in as: {st.session_state.user_email}")
+            if st.button("Sign Out", use_container_width=True):
+                logout()
+                st.rerun()
+        else:
+            st.markdown("#### Admin Access")
+            
+            # Check for client_secret.json
+            if not os.path.exists("client_secret.json"):
+                st.warning("OAuth Config Missing")
+                uploaded_secret = st.file_uploader("Upload client_secret.json", type=["json"], key="secret_uploader")
+                if uploaded_secret:
+                    with open("client_secret.json", "wb") as f:
+                        f.write(uploaded_secret.getbuffer())
+                    st.success("Config uploaded! Reloading...")
+                    st.rerun()
             else:
-                response = requests.post(api_url, json=json_data)
-            
-            if files and 'f' in locals() and not f.closed:
-                f.close()
+                if st.button("Sign in with Google", use_container_width=True):
+                    login_with_google()
+                    st.rerun()
+        
+        st.markdown("---")
+        
+        uploaded_file = st.file_uploader("Upload Log File", type=["log", "txt"])
+        
+        st.markdown("---")
+        st.markdown("### Quick Actions")
+        if st.button("Load Sample Data", use_container_width=True):
+            st.session_state['use_sample'] = True
+        
+        st.markdown("---")
+        st.markdown("### Import from GCS")
+        gcs_bucket = st.text_input("Bucket Name", placeholder="e.g., my-log-bucket")
+        gcs_blob = st.text_input("File Path", placeholder="e.g., logs/syslog.log")
+        if st.button("Load from GCS", use_container_width=True):
+            if gcs_bucket and gcs_blob:
+                 st.session_state['use_gcs'] = True
+                 st.session_state['gcs_bucket'] = gcs_bucket
+                 st.session_state['gcs_blob'] = gcs_blob
+            else:
+                st.error("Please provide both Bucket Name and File Path.")
+        
+        st.markdown("---")
+        st.info("Supported formats: .log, .txt\n\nMax file size: 200MB")
+
+    # Main Content
+    st.markdown("Enterprise-grade log analysis and anomaly detection.")
+
+    # Initialize session state for chat
+    if 'messages' not in st.session_state:
+        st.session_state.messages = []
+    if 'analyzed_logs' not in st.session_state:
+        st.session_state.analyzed_logs = None
+
+    # Logic to handle file source
+    files = None
+    json_data = None
+    api_url = "http://localhost:8000/analyze"
+
+    if uploaded_file is not None:
+        files = {"file": (uploaded_file.name, uploaded_file, "text/plain")}
+    elif st.session_state.get('use_sample'):
+        try:
+            f = open("sample_syslog.log", "rb")
+            files = {"file": ("sample_syslog.log", f, "text/plain")}
+        except FileNotFoundError:
+            st.error("Sample file not found.")
+    elif st.session_state.get('use_gcs'):
+        api_url = "http://localhost:8000/analyze-gcs"
+        json_data = {
+            "bucket_name": st.session_state['gcs_bucket'],
+            "blob_name": st.session_state['gcs_blob']
+        }
+
+    if files or json_data:
+        with st.spinner("Processing logs..."):
+            try:
+                # Reset file pointer if it's a reused file object
+                if files and 'f' in locals() and not f.closed:
+                    f.seek(0)
                 
-            if response.status_code == 200:
-                logs = response.json()
-                st.session_state.analyzed_logs = logs
+                if files:
+                    response = requests.post(api_url, files=files)
+                else:
+                    response = requests.post(api_url, json=json_data)
                 
-                # Create two columns: logs on left, chatbot on right
-                log_col, chat_col = st.columns([2, 1])
-                
-                with log_col:
-                    # Metrics
-                    total_logs = len(logs)
-                    errors = sum(1 for l in logs if l['type'] == 'error')
-                    warnings = sum(1 for l in logs if l['type'] == 'warning')
+                if files and 'f' in locals() and not f.closed:
+                    f.close()
                     
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.markdown(f"""<div class="metric-card"><div class="metric-value">{total_logs}</div><div class="metric-label">Total Lines</div></div>""", unsafe_allow_html=True)
-                    with col2:
-                        st.markdown(f"""<div class="metric-card"><div class="metric-value" style="color: #c53030;">{errors}</div><div class="metric-label">Errors</div></div>""", unsafe_allow_html=True)
-                    with col3:
-                        st.markdown(f"""<div class="metric-card"><div class="metric-value" style="color: #2b6cb0;">{warnings}</div><div class="metric-label">Warnings</div></div>""", unsafe_allow_html=True)
+                if response.status_code == 200:
+                    logs = response.json()
+                    st.session_state.analyzed_logs = logs
                     
-                    st.markdown("### Analysis Results")
+                    # Create two columns: logs on left, chatbot on right
+                    log_col, chat_col = st.columns([2, 1])
                     
-                    # Filter controls
-                    filter_type = st.multiselect("Filter by Type", ["error", "warning", "normal"], default=["error", "warning", "normal"])
-                    
-                    # Log Display
-                    st.markdown('<div class="log-container">', unsafe_allow_html=True)
-                    
-                    # Limit display for performance
-                    display_limit = 1000
-                    count = 0
-                    
-                    for log in logs:
-                        if log['type'] in filter_type:
-                            if count < display_limit:
-                                line_content = log["content"]
-                                line_type = log["type"]
-                                
-                                css_class = "log-normal"
-                                icon = "📝"
-                                if line_type == "error":
-                                    css_class = "log-error"
-                                    icon = "❌"
-                                elif line_type == "warning":
-                                    css_class = "log-warning"
-                                    icon = "⚠️"
-                                    
-                                st.markdown(f'<div class="log-line {css_class}"><span style="margin-right: 10px;">{icon}</span> {line_content}</div>', unsafe_allow_html=True)
-                                count += 1
-                            else:
-                                st.markdown(f'<div class="log-line log-normal">... and {len(logs) - display_limit} more lines hidden for performance ...</div>', unsafe_allow_html=True)
-                                break
-                                
-                    st.markdown('</div>', unsafe_allow_html=True)
-                
-                with chat_col:
-                    st.markdown("### 🤖 Log Assistant")
-                    
-                    if not gemini_api_key:
-                        st.info("Enter your Gemini API Key in the sidebar to enable the chatbot.")
-                    else:
-                        # Display chat messages
-                        chat_container = st.container(height=400)
-                        with chat_container:
-                            for message in st.session_state.messages:
-                                with st.chat_message(message["role"]):
-                                    st.markdown(message["content"])
+                    with log_col:
+                        # Metrics
+                        total_logs = len(logs)
+                        errors = sum(1 for l in logs if l['type'] == 'error')
+                        warnings = sum(1 for l in logs if l['type'] == 'warning')
                         
-                        # Chat input
-                        if prompt := st.chat_input("Ask about the logs..."):
-                            # Add user message
-                            st.session_state.messages.append({"role": "user", "content": prompt})
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.markdown(f"""<div class="metric-card"><div class="metric-value">{total_logs}</div><div class="metric-label">Total Lines</div></div>""", unsafe_allow_html=True)
+                        with col2:
+                            st.markdown(f"""<div class="metric-card"><div class="metric-value" style="color: #c53030;">{errors}</div><div class="metric-label">Errors</div></div>""", unsafe_allow_html=True)
+                        with col3:
+                            st.markdown(f"""<div class="metric-card"><div class="metric-value" style="color: #2b6cb0;">{warnings}</div><div class="metric-label">Warnings</div></div>""", unsafe_allow_html=True)
+                        
+                        st.markdown("### Analysis Results")
+                        
+                        # Filter controls
+                        filter_type = st.multiselect("Filter by Type", ["error", "warning", "normal"], default=["error", "warning", "normal"])
+                        
+                        # Log Display
+                        st.markdown('<div class="log-container">', unsafe_allow_html=True)
+                        
+                        # Limit display for performance
+                        display_limit = 1000
+                        count = 0
+                        
+                        for log in logs:
+                            if log['type'] in filter_type:
+                                if count < display_limit:
+                                    line_content = log["content"]
+                                    line_type = log["type"]
+                                    
+                                    css_class = "log-normal"
+                                    icon = "📝"
+                                    if line_type == "error":
+                                        css_class = "log-error"
+                                        icon = "❌"
+                                    elif line_type == "warning":
+                                        css_class = "log-warning"
+                                        icon = "⚠️"
+                                        
+                                    st.markdown(f'<div class="log-line {css_class}"><span style="margin-right: 10px;">{icon}</span> {line_content}</div>', unsafe_allow_html=True)
+                                    count += 1
+                                else:
+                                    st.markdown(f'<div class="log-line log-normal">... and {len(logs) - display_limit} more lines hidden for performance ...</div>', unsafe_allow_html=True)
+                                    break
+                                    
+                        st.markdown('</div>', unsafe_allow_html=True)
+                    
+                    with chat_col:
+                        st.markdown("### 🤖 Log Assistant")
+                        
+                        # Use global settings for API Key
+                        gemini_api_key = st.session_state.settings.get('api_key')
+                        
+                        if not gemini_api_key:
+                            st.warning("⚠️ API Key not configured.")
+                            st.info("Please ask an Admin to configure the API Key in Settings.")
+                        else:
+                            # Display chat messages
+                            chat_container = st.container(height=400)
+                            with chat_container:
+                                for message in st.session_state.messages:
+                                    with st.chat_message(message["role"]):
+                                        st.markdown(message["content"])
                             
-                            # Prepare context from logs
-                            log_context = "\n".join([f"{l['type'].upper()}: {l['content']}" for l in logs[:100]])  # Limit to first 100 lines
-                            
-                            # Call Gemini
-                            try:
-                                import google.generativeai as genai
-                                genai.configure(api_key=gemini_api_key)
-                                model = genai.GenerativeModel('gemini-pro')
+                            # Chat input
+                            if prompt := st.chat_input("Ask about the logs..."):
+                                # Add user message
+                                st.session_state.messages.append({"role": "user", "content": prompt})
                                 
-                                full_prompt = f"""You are a network log analysis assistant. Here are the analyzed logs:
+                                # Prepare context from logs
+                                log_context = "\n".join([f"{l['type'].upper()}: {l['content']}" for l in logs[:100]])  # Limit to first 100 lines
+                                
+                                # Call Gemini
+                                try:
+                                    import google.generativeai as genai
+                                    genai.configure(api_key=gemini_api_key)
+                                    model = genai.GenerativeModel('gemini-pro')
+                                    
+                                    full_prompt = f"""You are a network log analysis assistant. Here are the analyzed logs:
 
 {log_context}
 
 User question: {prompt}
 
 Please provide a concise and helpful answer based on the log data."""
-                                
-                                response = model.generate_content(full_prompt)
-                                assistant_message = response.text
-                                
-                                # Add assistant message
-                                st.session_state.messages.append({"role": "assistant", "content": assistant_message})
-                                
-                                # Rerun to display new messages
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Chatbot error: {str(e)}")
-                
-            else:
-                st.error(f"Analysis failed with status code: {response.status_code}")
-        except Exception as e:
-            st.error(f"An error occurred: {str(e)}")
+                                    
+                                    response = model.generate_content(full_prompt)
+                                    assistant_message = response.text
+                                    
+                                    # Add assistant message
+                                    st.session_state.messages.append({"role": "assistant", "content": assistant_message})
+                                    
+                                    # Rerun to display new messages
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"Chatbot error: {str(e)}")
+                    
+                else:
+                    st.error(f"Analysis failed with status code: {response.status_code}")
+            except Exception as e:
+                st.error(f"An error occurred: {str(e)}")
+    else:
+        st.info("Please upload a log file or load sample data to begin analysis.")
+
+# Main App Logic
+if st.session_state.current_page == 'settings':
+    render_settings_page()
 else:
-    st.info("Please upload a log file or load sample data to begin analysis.")
+    render_home_page()
 
