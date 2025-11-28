@@ -123,15 +123,61 @@ st.markdown("""
         color: #fffae6;
     }
     
-    /* Right Panel */
-    [data-testid="column"]:nth-of-type(2) {
-        background: var(--bg-card);
+    /* Toolbar */
+    .toolbar-container {
+        background-color: var(--bg-card);
+        border-bottom: 1px solid var(--border);
+        padding: 1rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+    }
+    
+    .toolbar-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text-sub);
+        padding: 0.5rem;
+        border-radius: 4px;
+        transition: all 0.2s;
+    }
+    
+    .toolbar-btn:hover {
+        background-color: #ebecf0;
+        color: var(--primary);
+    }
+    
+    .toolbar-icon {
+        font-size: 1.5rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .toolbar-label {
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    
+    /* Action Area */
+    .action-area {
+        background-color: var(--bg-card);
         border: 1px solid var(--border);
         border-radius: 4px;
         padding: 1.5rem;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        margin-bottom: 2rem;
+        animation: slideDown 0.3s ease-out;
     }
     
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
     /* Buttons */
     .stButton > button {
         background-color: var(--primary);
@@ -171,8 +217,11 @@ st.markdown("""
         padding: 1.5rem;
     }
     
-    /* Hide default sidebar */
-    [data-testid="stSidebar"] { display: none; }
+    /* Sidebar Styling */
+    [data-testid="stSidebar"] {
+        background-color: var(--bg-card);
+        border-right: 1px solid var(--border);
+    }
     
 </style>
 """, unsafe_allow_html=True)
@@ -218,48 +267,95 @@ def login_with_google():
         with open("client_secret.json", "r") as f:
             secret_data = json.load(f)
         
+        # --- WEB APPLICATION FLOW (For Streamlit Cloud) ---
         if 'web' in secret_data:
-            st.error("⚠️ Configuration Error")
-            st.warning("""
-            You uploaded a **Web Application** credential.
+            st.info("☁️ Cloud/Web Authentication Detected")
             
-            Please go to Google Cloud Console and create a **Desktop App** credential instead.
-            1. Go to APIs & Services > Credentials
-            2. Create Credentials > OAuth client ID
-            3. Application type: **Desktop app**
-            4. Download the JSON and upload it here.
-            """)
-            return
+            # Get the redirect URI (App URL)
+            # Try to get from secrets, or ask user
+            redirect_uri = st.text_input(
+                "Enter your App URL", 
+                placeholder="https://your-app.streamlit.app",
+                help="Copy the URL from your browser address bar. Ensure this URI is added to 'Authorized redirect URIs' in Google Cloud Console."
+            )
             
-        if 'installed' not in secret_data:
-            st.error("Invalid client_secret.json format. Unknown client type.")
+            if redirect_uri:
+                # Remove trailing slash if present
+                if redirect_uri.endswith('/'):
+                    redirect_uri = redirect_uri[:-1]
+                    
+                flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
+                    'client_secret.json',
+                    scopes=['openid', 'https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile'],
+                    redirect_uri=redirect_uri
+                )
+                
+                # Check for auth code in query params
+                if 'code' in st.query_params:
+                    code = st.query_params['code']
+                    try:
+                        flow.fetch_token(code=code)
+                        creds = flow.credentials
+                        
+                        # Get user info
+                        from googleapiclient.discovery import build
+                        service = build('oauth2', 'v2', credentials=creds)
+                        user_info = service.userinfo().get().execute()
+                        email = user_info['email']
+                        
+                        st.session_state.user_email = email
+                        if email in ADMIN_EMAILS:
+                            st.session_state.is_admin = True
+                            st.success(f"Logged in as Admin: {email}")
+                        else:
+                            st.session_state.is_admin = False
+                            st.warning(f"Logged in as User: {email} (No Admin Access)")
+                            
+                        # Clear query params to prevent re-use
+                        st.query_params.clear()
+                        st.rerun()
+                        
+                    except Exception as e:
+                        st.error(f"Authentication failed: {str(e)}")
+                        st.query_params.clear()
+                else:
+                    # Generate Login Link
+                    auth_url, _ = flow.authorization_url(prompt='consent')
+                    st.link_button("Login with Google", auth_url, type="primary", use_container_width=True)
+                    st.caption("Click above to sign in. You will be redirected back.")
+            else:
+                st.warning("Please enter your App URL to proceed.")
             return
 
-        # Create flow instance to manage the OAuth 2.0 Authorization Grant Flow steps.
-        flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
-            'client_secret.json',
-            scopes=['openid', 'https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile'])
+        # --- DESKTOP APP FLOW (For Localhost) ---
+        if 'installed' in secret_data:
+            # Create flow instance to manage the OAuth 2.0 Authorization Grant Flow steps.
+            flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
+                'client_secret.json',
+                scopes=['openid', 'https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile'])
 
-        # Launch the flow in the browser
-        # Note: This works for localhost. For production, you'd need a different flow.
-        # Allow HTTP for local testing
-        os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-        creds = flow.run_local_server(port=0)
-        
-        # Get user info
-        from googleapiclient.discovery import build
-        service = build('oauth2', 'v2', credentials=creds)
-        user_info = service.userinfo().get().execute()
-        email = user_info['email']
-        
-        st.session_state.user_email = email
-        if email in ADMIN_EMAILS:
-            st.session_state.is_admin = True
-            st.success(f"Logged in as Admin: {email}")
+            # Launch the flow in the browser
+            # Note: This works for localhost. For production, you'd need a different flow.
+            # Allow HTTP for local testing
+            os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+            creds = flow.run_local_server(port=0)
+            
+            # Get user info
+            from googleapiclient.discovery import build
+            service = build('oauth2', 'v2', credentials=creds)
+            user_info = service.userinfo().get().execute()
+            email = user_info['email']
+            
+            st.session_state.user_email = email
+            if email in ADMIN_EMAILS:
+                st.session_state.is_admin = True
+                st.success(f"Logged in as Admin: {email}")
+            else:
+                st.session_state.is_admin = False
+                st.warning(f"Logged in as User: {email} (No Admin Access)")
         else:
-            st.session_state.is_admin = False
-            st.warning(f"Logged in as User: {email} (No Admin Access)")
-            
+             st.error("Invalid client_secret.json format. Unknown client type.")
+
     except Exception as e:
         st.error(f"Login failed: {str(e)}")
 
@@ -314,71 +410,101 @@ def render_settings_page():
 
 # --- Home Page ---
 def render_home_page():
-    # Main Layout: Left (Content) and Right (Controls & Chat)
-    left_col, right_col = st.columns([3, 1])
+    # Initialize UI state for toggles
+    if 'active_tab' not in st.session_state:
+        st.session_state.active_tab = 'upload'  # Default to upload
 
-    with left_col:
-        st.title("Network Log Analyzer")
-        st.markdown("Enterprise-grade log analysis and anomaly detection.")
+    # --- Top Toolbar ---
+    col1, col2, col3, col4, col5, col6 = st.columns([1, 1, 1, 1, 4, 2])
+    
+    with col1:
+        if st.button("📂 Upload", use_container_width=True, type="primary" if st.session_state.active_tab == 'upload' else "secondary"):
+            st.session_state.active_tab = 'upload'
+            st.rerun()
+            
+    with col2:
+        if st.button("☁️ GCS", use_container_width=True, type="primary" if st.session_state.active_tab == 'gcs' else "secondary"):
+            st.session_state.active_tab = 'gcs'
+            st.rerun()
+            
+    with col3:
+        if st.button("📊 Sample", use_container_width=True, type="primary" if st.session_state.active_tab == 'sample' else "secondary"):
+            st.session_state.active_tab = 'sample'
+            st.session_state['use_sample'] = True # Trigger load immediately
+            st.rerun()
 
-    # --- Right Column: Control Panel ---
-    with right_col:
-        # Admin Settings Button (Top Right)
+    with col4:
+        # Admin Settings
         if st.session_state.user_email and st.session_state.is_admin:
-            if st.button("⚙️ Admin Settings", use_container_width=True):
+            if st.button("⚙️ Settings", use_container_width=True):
                 go_to_settings()
                 st.rerun()
-        
-        st.markdown("### Control Panel")
-        
-        # Auth Section
+    
+    with col6:
+        # Auth Status
         if st.session_state.user_email:
-            st.success(f"👤 {st.session_state.user_email}")
-            if st.button("Sign Out", use_container_width=True):
+            st.caption(f"Signed in as: {st.session_state.user_email}")
+            if st.button("Sign Out", key="logout_btn"):
                 logout()
                 st.rerun()
         else:
-            # Check for client_secret.json
-            if not os.path.exists("client_secret.json"):
-                st.warning("OAuth Config Missing")
-                uploaded_secret = st.file_uploader("Upload client_secret.json", type=["json"], key="secret_uploader")
-                if uploaded_secret:
-                    with open("client_secret.json", "wb") as f:
-                        f.write(uploaded_secret.getbuffer())
-                    st.success("Config uploaded! Reloading...")
-                    st.rerun()
-            else:
-                if st.button("Sign in with Google", use_container_width=True):
-                    login_with_google()
-                    st.rerun()
-                
-                if st.button("Reset OAuth Config", help="Click to upload a new client_secret.json"):
-                    if os.path.exists("client_secret.json"):
-                        os.remove("client_secret.json")
-                        st.rerun()
+            if st.button("Sign in with Google", key="login_btn"):
+                st.session_state.active_tab = 'auth'
+                st.rerun()
+
+    st.markdown("---")
+
+    # --- Action Area (Dynamic Content) ---
+    uploaded_file = None
+    
+    if st.session_state.active_tab == 'upload':
+        st.markdown("### 📂 Upload Log File")
+        uploaded_file = st.file_uploader("Select a .log or .txt file", type=["log", "txt"])
         
-        st.markdown("---")
-        
-        # File Upload Section
-        uploaded_file = st.file_uploader("Upload Log File", type=["log", "txt"])
-        
-        with st.expander("Advanced Options"):
-            if st.button("Load Sample Data", use_container_width=True):
-                st.session_state['use_sample'] = True
-            
-            st.markdown("---")
-            st.markdown("**Import from GCS**")
+    elif st.session_state.active_tab == 'gcs':
+        st.markdown("### ☁️ Import from Google Cloud Storage")
+        c1, c2, c3 = st.columns([3, 3, 1])
+        with c1:
             gcs_bucket = st.text_input("Bucket Name", placeholder="my-log-bucket")
+        with c2:
             gcs_blob = st.text_input("File Path", placeholder="logs/syslog.log")
-            if st.button("Load from GCS", use_container_width=True):
+        with c3:
+            st.write("") # Spacer
+            st.write("")
+            if st.button("Load", use_container_width=True):
                 if gcs_bucket and gcs_blob:
                      st.session_state['use_gcs'] = True
                      st.session_state['gcs_bucket'] = gcs_bucket
                      st.session_state['gcs_blob'] = gcs_blob
                 else:
-                    st.error("Please provide both Bucket Name and File Path.")
+                    st.error("Missing fields")
+                    
+    elif st.session_state.active_tab == 'auth':
+        st.markdown("### 🔐 Authentication")
+        # Check for client_secret.json
+        if not os.path.exists("client_secret.json"):
+            st.warning("OAuth Config Missing")
+            uploaded_secret = st.file_uploader("Upload client_secret.json", type=["json"], key="secret_uploader")
+            if uploaded_secret:
+                with open("client_secret.json", "wb") as f:
+                    f.write(uploaded_secret.getbuffer())
+                st.success("Config uploaded! Reloading...")
+                st.rerun()
+        else:
+            if st.button("Login with Google", key="auth_login_btn"):
+                login_with_google()
+                st.rerun()
+            
+            if st.button("Reset OAuth Config", help="Click to upload a new client_secret.json"):
+                if os.path.exists("client_secret.json"):
+                    os.remove("client_secret.json")
+                    st.rerun()
 
-    # --- Logic to handle file source ---
+    # --- Main Content: Log Analysis ---
+    st.title("Network Log Analyzer")
+    st.markdown("Enterprise-grade log analysis and anomaly detection.")
+
+    # Logic to handle file source
     files = None
     json_data = None
     api_url = "http://localhost:8000/analyze"
@@ -418,117 +544,115 @@ def render_home_page():
                     logs = response.json()
                     st.session_state.analyzed_logs = logs
                     
-                    # --- Left Column: Analysis Results ---
-                    with left_col:
-                        # Metrics
-                        total_logs = len(logs)
-                        errors = sum(1 for l in logs if l['type'] == 'error')
-                        warnings = sum(1 for l in logs if l['type'] == 'warning')
-                        
-                        m_col1, m_col2, m_col3 = st.columns(3)
-                        with m_col1:
-                            st.markdown(f"""<div class="metric-card"><div class="metric-value">{total_logs}</div><div class="metric-label">Total Lines</div></div>""", unsafe_allow_html=True)
-                        with m_col2:
-                            st.markdown(f"""<div class="metric-card"><div class="metric-value" style="color: #c53030;">{errors}</div><div class="metric-label">Errors</div></div>""", unsafe_allow_html=True)
-                        with m_col3:
-                            st.markdown(f"""<div class="metric-card"><div class="metric-value" style="color: #2b6cb0;">{warnings}</div><div class="metric-label">Warnings</div></div>""", unsafe_allow_html=True)
-                        
-                        st.markdown("### Analysis Results")
-                        
-                        # Filter controls
-                        filter_type = st.multiselect("Filter by Type", ["error", "warning", "normal"], default=["error", "warning", "normal"])
-                        
-                        # Log Display
-                        st.markdown("""
-                        <div class="log-container">
-                            <div class="log-header">
-                                <span>analysis_output.log</span>
-                            </div>
-                            <div class="log-content">
-                        """, unsafe_allow_html=True)
-                        
-                        # Limit display for performance
-                        display_limit = 1000
-                        count = 0
-                        
-                        for log in logs:
-                            if log['type'] in filter_type:
-                                if count < display_limit:
-                                    line_content = log["content"]
-                                    line_type = log["type"]
-                                    
-                                    css_class = "log-normal"
-                                    if line_type == "error":
-                                        css_class = "log-error"
-                                    elif line_type == "warning":
-                                        css_class = "log-warning"
-                                        
-                                    st.markdown(f'<div class="log-line {css_class}">{line_content}</div>', unsafe_allow_html=True)
-                                    count += 1
-                                else:
-                                    st.markdown(f'<div class="log-line log-normal">... and {len(logs) - display_limit} more lines hidden for performance ...</div>', unsafe_allow_html=True)
-                                    break
-                                    
-                        st.markdown('</div></div>', unsafe_allow_html=True)
+                    # Metrics
+                    total_logs = len(logs)
+                    errors = sum(1 for l in logs if l['type'] == 'error')
+                    warnings = sum(1 for l in logs if l['type'] == 'warning')
                     
-                    # --- Right Column: Chatbot (Stacked below controls) ---
-                    with right_col:
-                        st.markdown("---")
-                        st.markdown("### 🤖 Log Assistant")
-                        
-                        # Use global settings for API Key
-                        gemini_api_key = st.session_state.settings.get('api_key')
-                        
-                        if not gemini_api_key:
-                            st.info("Enter your Gemini API Key in Settings to enable the chatbot.")
-                        else:
-                            # Display chat messages
-                            chat_container = st.container(height=400)
-                            with chat_container:
-                                for message in st.session_state.messages:
-                                    with st.chat_message(message["role"]):
-                                        st.markdown(message["content"])
-                            
-                            # Chat input
-                            if prompt := st.chat_input("Ask about the logs..."):
-                                # Add user message
-                                st.session_state.messages.append({"role": "user", "content": prompt})
+                    m_col1, m_col2, m_col3 = st.columns(3)
+                    with m_col1:
+                        st.markdown(f"""<div class="metric-card"><div class="metric-value">{total_logs}</div><div class="metric-label">Total Lines</div></div>""", unsafe_allow_html=True)
+                    with m_col2:
+                        st.markdown(f"""<div class="metric-card"><div class="metric-value" style="color: #c53030;">{errors}</div><div class="metric-label">Errors</div></div>""", unsafe_allow_html=True)
+                    with m_col3:
+                        st.markdown(f"""<div class="metric-card"><div class="metric-value" style="color: #2b6cb0;">{warnings}</div><div class="metric-label">Warnings</div></div>""", unsafe_allow_html=True)
+                    
+                    st.markdown("### Analysis Results")
+                    
+                    # Filter controls
+                    filter_type = st.multiselect("Filter by Type", ["error", "warning", "normal"], default=["error", "warning", "normal"])
+                    
+                    # Log Display
+                    st.markdown("""
+                    <div class="log-container">
+                        <div class="log-header">
+                            <span>analysis_output.log</span>
+                        </div>
+                        <div class="log-content">
+                    """, unsafe_allow_html=True)
+                    
+                    # Limit display for performance
+                    display_limit = 1000
+                    count = 0
+                    
+                    for log in logs:
+                        if log['type'] in filter_type:
+                            if count < display_limit:
+                                line_content = log["content"]
+                                line_type = log["type"]
+                                    
+                                css_class = "log-normal"
+                                if line_type == "error":
+                                    css_class = "log-error"
+                                elif line_type == "warning":
+                                    css_class = "log-warning"
+                                    
+                                st.markdown(f'<div class="log-line {css_class}">{line_content}</div>', unsafe_allow_html=True)
+                                count += 1
+                            else:
+                                st.markdown(f'<div class="log-line log-normal">... and {len(logs) - display_limit} more lines hidden for performance ...</div>', unsafe_allow_html=True)
+                                break
                                 
-                                # Prepare context from logs
-                                log_context = "\n".join([f"{l['type'].upper()}: {l['content']}" for l in logs[:100]])  # Limit to first 100 lines
-                                
-                                # Call Gemini
-                                try:
-                                    import google.generativeai as genai
-                                    genai.configure(api_key=gemini_api_key)
-                                    model = genai.GenerativeModel('gemini-pro')
-                                    
-                                    full_prompt = f"""You are a network log analysis assistant. Here are the analyzed logs:
-
-{log_context}
-
-User question: {prompt}
-
-Please provide a concise and helpful answer based on the log data."""
-                                    
-                                    response = model.generate_content(full_prompt)
-                                    assistant_message = response.text
-                                    
-                                    # Add assistant message
-                                    st.session_state.messages.append({"role": "assistant", "content": assistant_message})
-                                    
-                                    # Rerun to display new messages
-                                    st.rerun()
-                                except Exception as e:
-                                    st.error(f"Chatbot error: {str(e)}")
+                    st.markdown('</div></div>', unsafe_allow_html=True)
                 
                 else:
                     st.error(f"Analysis failed with status code: {response.status_code}")
             except Exception as e:
                 st.error(f"An error occurred: {str(e)}")
     else:
-        with left_col:
-            st.info("Please upload a log file or load sample data from the Control Panel to begin analysis.")
+        st.info("Please select an action from the top menu to begin.")
+
+    # --- Sidebar: Chatbot ---
+    with st.sidebar:
+        st.markdown("### 🤖 Log Assistant")
+        
+        # Use global settings for API Key
+        gemini_api_key = st.session_state.settings.get('api_key')
+        
+        if not gemini_api_key:
+            st.info("Enter your Gemini API Key in Settings to enable the chatbot.")
+        else:
+            # Display chat messages
+            chat_container = st.container(height=500)
+            with chat_container:
+                for message in st.session_state.messages:
+                    with st.chat_message(message["role"]):
+                        st.markdown(message["content"])
+            
+            # Chat input
+            if prompt := st.chat_input("Ask about the logs..."):
+                # Add user message
+                st.session_state.messages.append({"role": "user", "content": prompt})
+                
+                # Prepare context from logs
+                log_context = ""
+                if st.session_state.analyzed_logs:
+                     log_context = "\n".join([f"{l['type'].upper()}: {l['content']}" for l in st.session_state.analyzed_logs[:100]])
+                
+                # Call Gemini
+                try:
+                    import google.generativeai as genai
+                    genai.configure(api_key=gemini_api_key)
+                    model = genai.GenerativeModel('gemini-pro')
+                    
+                    full_prompt = f"""You are a network log analysis assistant. Here are the analyzed logs:
+
+{log_context}
+
+User question: {prompt}
+
+Please provide a concise and helpful answer based on the log data."""
+                    
+                    response = model.generate_content(full_prompt)
+                    assistant_message = response.text
+                    
+                    # Add assistant message
+                    st.session_state.messages.append({"role": "assistant", "content": assistant_message})
+                    
+                    # Rerun to display new messages
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Chatbot error: {str(e)}")
 
 # Main App Logic
 if st.session_state.current_page == 'settings':
