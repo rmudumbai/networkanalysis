@@ -4,201 +4,176 @@ import pandas as pd
 
 st.set_page_config(page_title="Network Log Analyzer", layout="wide", page_icon="🛡️")
 
-# Custom CSS for Enterprise Material Design
+# Custom CSS for Clean Professional Design
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap');
     
-    /* Main Background */
+    :root {
+        --primary: #0052cc; /* Professional Blue */
+        --bg-main: #f4f5f7;
+        --bg-card: #ffffff;
+        --text-main: #172b4d;
+        --text-sub: #5e6c84;
+        --border: #dfe1e6;
+    }
+
+    /* Global Reset */
     .stApp {
-        background-color: #f5f7fa;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        background-color: var(--bg-main);
+        font-family: 'Inter', sans-serif;
+        color: var(--text-main);
     }
     
-    /* Main content area */
+    /* Main Layout */
     .main .block-container {
-        background-color: #ffffff;
-        border-radius: 12px;
-        padding: 2rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+        max-width: 1200px;
     }
     
-    /* Header Styling */
+    /* Headers */
     h1 {
-        color: #1e293b;
         font-weight: 600;
-        letter-spacing: -0.5px;
+        color: var(--text-main);
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.01em;
     }
     
     h3 {
-        color: #334155;
         font-weight: 600;
+        color: var(--text-main);
+        font-size: 1.1rem;
+        margin-bottom: 0.75rem;
     }
     
-    /* Log Container */
-    .log-container {
-        background-color: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 0;
-        margin-top: 1.5rem;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        overflow: hidden;
-    }
-    
-    /* Log Lines */
-    .log-line {
-        padding: 12px 20px;
-        border-bottom: 1px solid #f1f5f9;
-        font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-        font-size: 0.875rem;
-        display: flex;
-        align-items: center;
-        transition: background-color 0.15s ease;
-    }
-    
-    .log-line:hover {
-        background-color: #f8fafc;
-    }
-    
-    .log-line:last-child {
-        border-bottom: none;
-    }
-    
-    .log-error {
-        background-color: #fef2f2;
-        color: #991b1b;
-        border-left: 3px solid #dc2626;
-    }
-    
-    .log-error:hover {
-        background-color: #fee2e2;
-    }
-    
-    .log-warning {
-        background-color: #eff6ff;
-        color: #1e40af;
-        border-left: 3px solid #3b82f6;
-    }
-    
-    .log-warning:hover {
-        background-color: #dbeafe;
-    }
-    
-    .log-normal {
-        background-color: #ffffff;
-        color: #475569;
-        border-left: 3px solid #e2e8f0;
-    }
-    
-    /* Sidebar */
-    [data-testid="stSidebar"] {
-        background-color: #ffffff;
-        border-right: 1px solid #e2e8f0;
-    }
-    
-    [data-testid="stSidebar"] .stMarkdown h3 {
-        color: #1e293b;
-        font-weight: 600;
-        font-size: 1rem;
-    }
-    
-    /* Metric Cards */
+    /* Cards */
     .metric-card {
-        background-color: #ffffff;
-        padding: 1.5rem;
-        border-radius: 8px;
-        border: 1px solid #e2e8f0;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 4px; /* Sharper corners for pro look */
+        padding: 1.25rem;
         box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        text-align: center;
-        transition: all 0.2s ease;
-    }
-    
-    .metric-card:hover {
-        box-shadow: 0 4px 6px rgba(0,0,0,0.07);
-        border-color: #cbd5e1;
     }
     
     .metric-value {
         font-size: 2rem;
         font-weight: 600;
-        color: #0f172a;
-        margin-bottom: 0.5rem;
+        color: var(--text-main);
     }
     
     .metric-label {
-        color: #64748b;
         font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-sub);
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.05em;
+    }
+    
+    /* Log Viewer - Clean Terminal */
+    .log-container {
+        background-color: #091e42; /* Dark Navy */
+        border-radius: 4px;
+        border: 1px solid #091e42;
+        margin-top: 1.5rem;
+        font-family: 'Roboto Mono', monospace;
+        overflow: hidden;
+    }
+    
+    .log-header {
+        background-color: #172b4d;
+        padding: 8px 16px;
+        border-bottom: 1px solid #253858;
+        color: #b3bac5;
+        font-size: 0.75rem;
         font-weight: 500;
+        display: flex;
+        align-items: center;
+    }
+    
+    .log-content {
+        max-height: 600px;
+        overflow-y: auto;
+        padding: 0.5rem 0;
+    }
+    
+    .log-line {
+        padding: 4px 16px;
+        font-size: 0.8rem;
+        line-height: 1.5;
+        color: #ebecf0;
+        border-left: 3px solid transparent;
+    }
+    
+    .log-line:hover {
+        background-color: rgba(255,255,255,0.05);
+    }
+    
+    .log-error {
+        background-color: rgba(222, 53, 11, 0.15);
+        border-left-color: #de350b;
+        color: #ffbdad;
+    }
+    
+    .log-warning {
+        background-color: rgba(255, 153, 31, 0.15);
+        border-left-color: #ff991f;
+        color: #fffae6;
+    }
+    
+    /* Right Panel */
+    [data-testid="column"]:nth-of-type(2) {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 1.5rem;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
     
     /* Buttons */
     .stButton > button {
-        background-color: #0f172a;
+        background-color: var(--primary);
         color: white;
-        border: none;
-        border-radius: 6px;
-        padding: 0.625rem 1.25rem;
         font-weight: 500;
-        font-size: 0.875rem;
-        transition: all 0.2s ease;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        padding: 0.5rem 1rem;
+        border-radius: 3px;
+        border: none;
+        transition: background 0.1s;
+        width: 100%;
     }
     
     .stButton > button:hover {
-        background-color: #1e293b;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        background-color: #0047b3;
+        box-shadow: none;
     }
     
-    /* Input Fields */
+    /* Inputs */
     .stTextInput > div > div > input,
-    .stTextArea > div > div > textarea {
-        border-radius: 6px;
-        border: 1px solid #e2e8f0;
-        transition: all 0.2s ease;
-        font-size: 0.875rem;
+    .stSelectbox > div > div > div {
+        background-color: #fafbfc;
+        border: 2px solid #dfe1e6;
+        border-radius: 3px;
+        color: var(--text-main);
     }
     
-    .stTextInput > div > div > input:focus,
-    .stTextArea > div > div > textarea:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-    
-    /* Chat Container */
-    [data-testid="stChatMessageContainer"] {
-        background-color: #f8fafc;
-        border-radius: 8px;
-        padding: 1rem;
+    .stTextInput > div > div > input:focus {
+        border-color: var(--primary);
+        background-color: #fff;
     }
     
     /* File Uploader */
     [data-testid="stFileUploader"] {
-        background-color: #f8fafc;
-        border-radius: 8px;
+        background-color: #fafbfc;
+        border: 2px dashed #dfe1e6;
+        border-radius: 4px;
         padding: 1.5rem;
-        border: 2px dashed #cbd5e1;
-        transition: all 0.2s ease;
     }
     
-    [data-testid="stFileUploader"]:hover {
-        border-color: #94a3b8;
-        background-color: #f1f5f9;
-    }
+    /* Hide default sidebar */
+    [data-testid="stSidebar"] { display: none; }
     
-    /* Multiselect */
-    .stMultiSelect > div > div {
-        border-radius: 6px;
-        border: 1px solid #e2e8f0;
-    }
-    
-    /* Info boxes */
-    .stAlert {
-        border-radius: 6px;
-        border-left: 3px solid #3b82f6;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -222,7 +197,7 @@ if 'settings' not in st.session_state:
     }
 
 # Admin Configuration
-ADMIN_EMAILS = ["admin@example.com", "mohanr@google.com"] # Add your email here for testing
+ADMIN_EMAILS = ["admin@example.com", "mohanr@google.com", "rmudumbai@gmail.com", "mohanraman1000@gmail.com"] # Add your email here for testing
 
 # Navigation Functions
 def go_to_settings():
@@ -238,6 +213,28 @@ def login_with_google():
         return
 
     try:
+        # Validate credential type
+        import json
+        with open("client_secret.json", "r") as f:
+            secret_data = json.load(f)
+        
+        if 'web' in secret_data:
+            st.error("⚠️ Configuration Error")
+            st.warning("""
+            You uploaded a **Web Application** credential.
+            
+            Please go to Google Cloud Console and create a **Desktop App** credential instead.
+            1. Go to APIs & Services > Credentials
+            2. Create Credentials > OAuth client ID
+            3. Application type: **Desktop app**
+            4. Download the JSON and upload it here.
+            """)
+            return
+            
+        if 'installed' not in secret_data:
+            st.error("Invalid client_secret.json format. Unknown client type.")
+            return
+
         # Create flow instance to manage the OAuth 2.0 Authorization Grant Flow steps.
         flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
             'client_secret.json',
@@ -245,6 +242,8 @@ def login_with_google():
 
         # Launch the flow in the browser
         # Note: This works for localhost. For production, you'd need a different flow.
+        # Allow HTTP for local testing
+        os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
         creds = flow.run_local_server(port=0)
         
         # Get user info
@@ -315,31 +314,30 @@ def render_settings_page():
 
 # --- Home Page ---
 def render_home_page():
-    # Header with Admin Controls
-    col1, col2 = st.columns([6, 1])
-    with col1:
+    # Main Layout: Left (Content) and Right (Controls & Chat)
+    left_col, right_col = st.columns([3, 1])
+
+    with left_col:
         st.title("Network Log Analyzer")
-    with col2:
+        st.markdown("Enterprise-grade log analysis and anomaly detection.")
+
+    # --- Right Column: Control Panel ---
+    with right_col:
+        # Admin Settings Button (Top Right)
         if st.session_state.user_email and st.session_state.is_admin:
-            if st.button("⚙️", help="Admin Settings"):
+            if st.button("⚙️ Admin Settings", use_container_width=True):
                 go_to_settings()
                 st.rerun()
-
-    # Sidebar
-    with st.sidebar:
-        st.image("frontend/logo.png", width=150)
-        st.markdown("### Control Panel")
-        st.markdown("---")
         
-        # Auth Status
+        st.markdown("### Control Panel")
+        
+        # Auth Section
         if st.session_state.user_email:
-            st.success(f"Signed in as: {st.session_state.user_email}")
+            st.success(f"👤 {st.session_state.user_email}")
             if st.button("Sign Out", use_container_width=True):
                 logout()
                 st.rerun()
         else:
-            st.markdown("#### Admin Access")
-            
             # Check for client_secret.json
             if not os.path.exists("client_secret.json"):
                 st.warning("OAuth Config Missing")
@@ -353,41 +351,34 @@ def render_home_page():
                 if st.button("Sign in with Google", use_container_width=True):
                     login_with_google()
                     st.rerun()
+                
+                if st.button("Reset OAuth Config", help="Click to upload a new client_secret.json"):
+                    if os.path.exists("client_secret.json"):
+                        os.remove("client_secret.json")
+                        st.rerun()
         
         st.markdown("---")
         
+        # File Upload Section
         uploaded_file = st.file_uploader("Upload Log File", type=["log", "txt"])
         
-        st.markdown("---")
-        st.markdown("### Quick Actions")
-        if st.button("Load Sample Data", use_container_width=True):
-            st.session_state['use_sample'] = True
-        
-        st.markdown("---")
-        st.markdown("### Import from GCS")
-        gcs_bucket = st.text_input("Bucket Name", placeholder="e.g., my-log-bucket")
-        gcs_blob = st.text_input("File Path", placeholder="e.g., logs/syslog.log")
-        if st.button("Load from GCS", use_container_width=True):
-            if gcs_bucket and gcs_blob:
-                 st.session_state['use_gcs'] = True
-                 st.session_state['gcs_bucket'] = gcs_bucket
-                 st.session_state['gcs_blob'] = gcs_blob
-            else:
-                st.error("Please provide both Bucket Name and File Path.")
-        
-        st.markdown("---")
-        st.info("Supported formats: .log, .txt\n\nMax file size: 200MB")
+        with st.expander("Advanced Options"):
+            if st.button("Load Sample Data", use_container_width=True):
+                st.session_state['use_sample'] = True
+            
+            st.markdown("---")
+            st.markdown("**Import from GCS**")
+            gcs_bucket = st.text_input("Bucket Name", placeholder="my-log-bucket")
+            gcs_blob = st.text_input("File Path", placeholder="logs/syslog.log")
+            if st.button("Load from GCS", use_container_width=True):
+                if gcs_bucket and gcs_blob:
+                     st.session_state['use_gcs'] = True
+                     st.session_state['gcs_bucket'] = gcs_bucket
+                     st.session_state['gcs_blob'] = gcs_blob
+                else:
+                    st.error("Please provide both Bucket Name and File Path.")
 
-    # Main Content
-    st.markdown("Enterprise-grade log analysis and anomaly detection.")
-
-    # Initialize session state for chat
-    if 'messages' not in st.session_state:
-        st.session_state.messages = []
-    if 'analyzed_logs' not in st.session_state:
-        st.session_state.analyzed_logs = None
-
-    # Logic to handle file source
+    # --- Logic to handle file source ---
     files = None
     json_data = None
     api_url = "http://localhost:8000/analyze"
@@ -407,6 +398,7 @@ def render_home_page():
             "blob_name": st.session_state['gcs_blob']
         }
 
+    # --- Processing & Display ---
     if files or json_data:
         with st.spinner("Processing logs..."):
             try:
@@ -426,21 +418,19 @@ def render_home_page():
                     logs = response.json()
                     st.session_state.analyzed_logs = logs
                     
-                    # Create two columns: logs on left, chatbot on right
-                    log_col, chat_col = st.columns([2, 1])
-                    
-                    with log_col:
+                    # --- Left Column: Analysis Results ---
+                    with left_col:
                         # Metrics
                         total_logs = len(logs)
                         errors = sum(1 for l in logs if l['type'] == 'error')
                         warnings = sum(1 for l in logs if l['type'] == 'warning')
                         
-                        col1, col2, col3 = st.columns(3)
-                        with col1:
+                        m_col1, m_col2, m_col3 = st.columns(3)
+                        with m_col1:
                             st.markdown(f"""<div class="metric-card"><div class="metric-value">{total_logs}</div><div class="metric-label">Total Lines</div></div>""", unsafe_allow_html=True)
-                        with col2:
+                        with m_col2:
                             st.markdown(f"""<div class="metric-card"><div class="metric-value" style="color: #c53030;">{errors}</div><div class="metric-label">Errors</div></div>""", unsafe_allow_html=True)
-                        with col3:
+                        with m_col3:
                             st.markdown(f"""<div class="metric-card"><div class="metric-value" style="color: #2b6cb0;">{warnings}</div><div class="metric-label">Warnings</div></div>""", unsafe_allow_html=True)
                         
                         st.markdown("### Analysis Results")
@@ -449,7 +439,13 @@ def render_home_page():
                         filter_type = st.multiselect("Filter by Type", ["error", "warning", "normal"], default=["error", "warning", "normal"])
                         
                         # Log Display
-                        st.markdown('<div class="log-container">', unsafe_allow_html=True)
+                        st.markdown("""
+                        <div class="log-container">
+                            <div class="log-header">
+                                <span>analysis_output.log</span>
+                            </div>
+                            <div class="log-content">
+                        """, unsafe_allow_html=True)
                         
                         # Limit display for performance
                         display_limit = 1000
@@ -462,31 +458,29 @@ def render_home_page():
                                     line_type = log["type"]
                                     
                                     css_class = "log-normal"
-                                    icon = "📝"
                                     if line_type == "error":
                                         css_class = "log-error"
-                                        icon = "❌"
                                     elif line_type == "warning":
                                         css_class = "log-warning"
-                                        icon = "⚠️"
                                         
-                                    st.markdown(f'<div class="log-line {css_class}"><span style="margin-right: 10px;">{icon}</span> {line_content}</div>', unsafe_allow_html=True)
+                                    st.markdown(f'<div class="log-line {css_class}">{line_content}</div>', unsafe_allow_html=True)
                                     count += 1
                                 else:
                                     st.markdown(f'<div class="log-line log-normal">... and {len(logs) - display_limit} more lines hidden for performance ...</div>', unsafe_allow_html=True)
                                     break
                                     
-                        st.markdown('</div>', unsafe_allow_html=True)
+                        st.markdown('</div></div>', unsafe_allow_html=True)
                     
-                    with chat_col:
+                    # --- Right Column: Chatbot (Stacked below controls) ---
+                    with right_col:
+                        st.markdown("---")
                         st.markdown("### 🤖 Log Assistant")
                         
                         # Use global settings for API Key
                         gemini_api_key = st.session_state.settings.get('api_key')
                         
                         if not gemini_api_key:
-                            st.warning("⚠️ API Key not configured.")
-                            st.info("Please ask an Admin to configure the API Key in Settings.")
+                            st.info("Enter your Gemini API Key in Settings to enable the chatbot.")
                         else:
                             # Display chat messages
                             chat_container = st.container(height=400)
@@ -527,13 +521,14 @@ Please provide a concise and helpful answer based on the log data."""
                                     st.rerun()
                                 except Exception as e:
                                     st.error(f"Chatbot error: {str(e)}")
-                    
+                
                 else:
                     st.error(f"Analysis failed with status code: {response.status_code}")
             except Exception as e:
                 st.error(f"An error occurred: {str(e)}")
     else:
-        st.info("Please upload a log file or load sample data to begin analysis.")
+        with left_col:
+            st.info("Please upload a log file or load sample data from the Control Panel to begin analysis.")
 
 # Main App Logic
 if st.session_state.current_page == 'settings':
