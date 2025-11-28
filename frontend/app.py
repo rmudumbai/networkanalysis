@@ -416,9 +416,8 @@ def render_home_page():
 
     # --- Top Toolbar ---
     # Use a large spacer column to push everything to the right
-    # [Spacer, Upload, GCS, Sample, Settings, Auth]
-    # Using small ratios for buttons to keep them tight
-    col_spacer, col1, col2, col3, col4, col5 = st.columns([6, 0.7, 0.7, 0.7, 0.7, 1.5], gap="small")
+    # All buttons are equal width icons for consistency
+    col_spacer, col1, col2, col3, col4, col5 = st.columns([7, 0.6, 0.6, 0.6, 0.6, 0.6], gap="small")
     
     with col1:
         if st.button("📂", help="Upload File", use_container_width=True, type="primary" if st.session_state.active_tab == 'upload' else "secondary"):
@@ -443,16 +442,17 @@ def render_home_page():
                 go_to_settings()
                 st.rerun()
         else:
-             st.write("") # Placeholder to keep alignment
+            # Empty placeholder to maintain layout
+            st.write("")
     
     with col5:
-        # Auth Status
+        # Auth Status - Use icon for both states
         if st.session_state.user_email:
-            if st.button("Sign Out", key="logout_btn", use_container_width=True):
+            if st.button("🚪", help=f"Sign Out ({st.session_state.user_email})", key="logout_btn", use_container_width=True):
                 logout()
                 st.rerun()
         else:
-            if st.button("Sign In", key="login_btn", type="primary", use_container_width=True):
+            if st.button("👤", help="Sign In with Google", key="login_btn", type="primary", use_container_width=True):
                 st.session_state.active_tab = 'auth'
                 st.rerun()
 
