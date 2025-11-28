@@ -497,9 +497,11 @@ def render_home_page():
         st.session_state.active_tab = 'upload'  # Default to upload
 
     # --- Top Toolbar ---
-    # Use a large spacer column to push everything to the right
-    # All buttons are equal width icons for consistency
-    col_spacer, col1, col2, col3, col4, col5 = st.columns([8, 0.5, 0.5, 0.5, 0.5, 0.5])
+    # Logo on the left, icons tightly grouped on the right
+    col_logo, col_spacer, col1, col2, col3, col4, col5 = st.columns([6, 2, 0.5, 0.5, 0.5, 0.5, 0.5])
+    
+    with col_logo:
+        st.image("frontend/logo_horizontal.png", width=300)
     
     with col1:
         if st.button("📂", help="Upload File", use_container_width=True, type="primary" if st.session_state.active_tab == 'upload' else "secondary"):
