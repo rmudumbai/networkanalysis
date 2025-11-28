@@ -1,5 +1,7 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from google.cloud import storage
 import io
 
 app = FastAPI()
@@ -13,9 +15,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.post("/analyze")
-async def analyze_log(file: UploadFile = File(...)):
-    content = await file.read()
+class GCSRequest(BaseModel):
+    bucket_name: str
+    blob_name: str
+
+def parse_log_content(content: bytes):
     decoded_content = content.decode("utf-8", errors="replace")
     lines = decoded_content.splitlines()
     
@@ -33,8 +37,24 @@ async def analyze_log(file: UploadFile = File(...)):
             "content": line,
             "type": line_type
         })
-        
     return analyzed_lines
+
+@app.post("/analyze")
+async def analyze_log(file: UploadFile = File(...)):
+    content = await file.read()
+    return parse_log_content(content)
+
+@app.post("/analyze-gcs")
+async def analyze_gcs_log(request: GCSRequest):
+    try:
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(request.bucket_name)
+        blob = bucket.blob(request.blob_name)
+        
+        content = blob.download_as_bytes()
+        return parse_log_content(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
